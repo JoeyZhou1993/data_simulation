@@ -9,19 +9,19 @@
     <form id="retentionForm">
 
         <label for="nextRetention">次留:</label>
-        <input type="number" id="nextRetention" name="nextRetention" value="0.4" required><br>
+        <input type="number" id="nextRetention" name="nextRetention" value="0.42" required><br>
 
         <label for="sevenDayRetention">7留:</label>
-        <input type="number" id="sevenDayRetention" name="sevenDayRetention" value="0.2" required><br>
+        <input type="number" id="sevenDayRetention" name="sevenDayRetention" value="0.22" required><br>
 
-        <label for="fifteenDayRetention">15留:</label>
-        <input type="number" id="fifteenDayRetention" name="fifteenDayRetention" value="0.15" required><br>
+        <label for="fourteenDayRetention">14留:</label>
+        <input type="number" id="fourteenDayRetention" name="fourteenDayRetention" value="0.17" required><br>
 
         <label for="thirtyDayRetention">30留:</label>
         <input type="number" id="thirtyDayRetention" name="thirtyDayRetention" value="0.12" required><br>
 
         <label for="sixtyDayRetention">60留:</label>
-        <input type="number" id="sixtyDayRetention" name="sixtyDayRetention" value="0.08" required><br>
+        <input type="number" id="sixtyDayRetention" name="sixtyDayRetention" value="0.10" required><br>
 
         <label for="startDAU">起始DAU:</label>
         <input type="number" id="startDAU" name="startDAU" value="10000" required><br>
@@ -62,7 +62,7 @@
             const dailyNewUsers = parseFloat(document.getElementById('dailyNewUsers').value);
             const nextRetention = parseFloat(document.getElementById('nextRetention').value);
             const sevenDayRetention = parseFloat(document.getElementById('sevenDayRetention').value);
-            const fifteenDayRetention = parseFloat(document.getElementById('fifteenDayRetention').value);
+            const fourteenDayRetention = parseFloat(document.getElementById('fourteenDayRetention').value);
             const thirtyDayRetention = parseFloat(document.getElementById('thirtyDayRetention').value);
             const sixtyDayRetention = parseFloat(document.getElementById('sixtyDayRetention').value);
             const cpi = parseFloat(document.getElementById('cpi').value);
@@ -73,7 +73,7 @@
                 const knownPoints = [
                     { day: 1, rate: nextRetention },
                     { day: 7, rate: sevenDayRetention },
-                    { day: 15, rate: fifteenDayRetention },
+                    { day: 14, rate: fourteenDayRetention },
                     { day: 30, rate: thirtyDayRetention },
                     { day: 60, rate: sixtyDayRetention }
                 ];
@@ -128,16 +128,9 @@
 
             // 计算每天的DAU
             for (let currentDay = 0; currentDay < days; currentDay++) {
-                let todayDAU = 0;
+                let todayDAU = startDAU; // 基础DAU保持不变
 
-                // 1. 计算初始DAU的留存
-                if (currentDay === 0) {
-                    todayDAU = startDAU; // 第一天就是初始DAU
-                } else {
-                    todayDAU = startDAU * getRetentionRate(currentDay); // 初始DAU的留存
-                }
-
-                // 2. 计算每日新增用户的留存累计
+                // 计算每日新增用户的留存累计
                 if (currentDay > 0) { // 从第二天开始计算新增用户
                     // 先加上当天的新增用户
                     todayDAU += dailyNewUsers;
@@ -261,15 +254,17 @@
 
             // 显示成本分析
             const totalUsers = dauData.reduce((sum, dau) => sum + dau, 0);
-            const totalNewUsers = dailyNewUsers * days;
-            const totalCost = totalNewUsers * cpi;
+            const lastDayDAU = dauData[dauData.length - 1];
+            const avgDAU = Math.round(totalUsers / days);
+            const dailyCost = dailyNewUsers * cpi;
+            const totalCost = dailyNewUsers * days * cpi;
+            
             const costAnalysisHtml = `
                 <h3>成本分析</h3>
-                <p>60天总用户数：${Math.round(totalUsers).toLocaleString()} 人次</p>
-                <p>总新增用户：${Math.round(totalNewUsers).toLocaleString()} 人</p>
+                <p>最终DAU：${Math.round(lastDayDAU).toLocaleString()} 人</p>
+                <p>日均DAU：${avgDAU.toLocaleString()} 人</p>
+                <p>每日成本：$${dailyCost.toLocaleString()}</p>
                 <p>总成本：$${totalCost.toLocaleString()}</p>
-                <p>平均单日活跃用户获取成本：$${(totalCost / totalUsers).toFixed(2)}</p>
-                <p>日均DAU：${Math.round(totalUsers / days).toLocaleString()} 人</p>
             `;
             document.getElementById('costAnalysis').innerHTML = costAnalysisHtml;
         });
