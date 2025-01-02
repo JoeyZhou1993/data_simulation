@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAU模拟</title>
+</head>
+<body>
+    <form id="retentionForm">
+
+        <label for="nextRetention">次留:</label>
+        <input type="number" id="nextRetention" name="nextRetention" value="0.4" required><br>
+
+        <label for="sevenDayRetention">7留:</label>
+        <input type="number" id="sevenDayRetention" name="sevenDayRetention" value="0.2" required><br>
+
+        <label for="fifteenDayRetention">15留:</label>
+        <input type="number" id="fifteenDayRetention" name="fifteenDayRetention" value="0.15" required><br>
+
+        <label for="thirtyDayRetention">30留:</label>
+        <input type="number" id="thirtyDayRetention" name="thirtyDayRetention" value="0.12" required><br>
+
+        <label for="sixtyDayRetention">60留:</label>
+        <input type="number" id="sixtyDayRetention" name="sixtyDayRetention" value="0.08" required><br>
+
+        <label for="startDAU">起始DAU:</label>
+        <input type="number" id="startDAU" name="startDAU" value="10000" required><br>
+
+        <label for="dailyNewUsers">每日新增用户:</label>
+        <input type="number" id="dailyNewUsers" name="dailyNewUsers" value="1000" required><br>
+        
+        <label for="cpi">CPI（每个安装成本）:</label>
+        <input type="number" id="cpi" name="cpi" value="0.3" required><br>
+
+        <button type="submit">模拟</button>
+    </form>
+
+    <!-- 添加结果显示区域 -->
+    <div id="results" style="margin-top: 20px;">
+        <h2>模拟结果</h2>
+        <div style="width: 800px; height: 350px; margin-bottom: 20px;">
+            <h3>DAU变化趋势</h3>
+            <canvas id="dauChart"></canvas>
+        </div>
+        <div style="width: 800px; height: 350px;">
+            <h3>留存率变化趋势</h3>
+            <canvas id="retentionChart"></canvas>
+        </div>
+        <div id="costAnalysis"></div>
+    </div>
+
+    <!-- 添加Chart.js库用于图表显示 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- 添加主要的JavaScript代码 -->
+    <script>
+        document.getElementById('retentionForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // 获取表单数据
+            const startDAU = parseFloat(document.getElementById('startDAU').value);
+            const dailyNewUsers = parseFloat(document.getElementById('dailyNewUsers').value);
+            const nextRetention = parseFloat(document.getElementById('nextRetention').value);
+            const sevenDayRetention = parseFloat(document.getElementById('sevenDayRetention').value);
+            const fifteenDayRetention = parseFloat(document.getElementById('fifteenDayRetention').value);
+            const thirtyDayRetention = parseFloat(document.getElementById('thirtyDayRetention').value);
+            const sixtyDayRetention = parseFloat(document.getElementById('sixtyDayRetention').value);
+            const cpi = parseFloat(document.getElementById('cpi').value);
+
+            // 改进的留存曲线拟合函数
+            function getRetentionRate(day) {
+                // 定义已知的留存点
+                const knownPoints = [
+                    { day: 1, rate: nextRetention },
+                    { day: 7, rate: sevenDayRetention },
+                    { day: 15, rate: fifteenDayRetention },
+                    { day: 30, rate: thirtyDayRetention },
+                    { day: 60, rate: sixtyDayRetention }
+                ];
+
+                // 如果正好是已知点，直接返回
+                const exactPoint = knownPoints.find(p => p.day === day);
+                if (exactPoint) return exactPoint.rate;
+
+                // 找到最近的两个点进行插值
+                let leftPoint, rightPoint;
+                for (let i = 0; i < knownPoints.length - 1; i++) {
+                    if (day > knownPoints[i].day && day < knownPoints[i + 1].day) {
+                        leftPoint = knownPoints[i];
+                        rightPoint = knownPoints[i + 1];
+                        break;
+                    }
+                }
+
+                // 如果在已知点范围内，使用对数插值
+                if (leftPoint && rightPoint) {
+                    const x1 = Math.log(leftPoint.day);
+                    const x2 = Math.log(rightPoint.day);
+                    const y1 = Math.log(leftPoint.rate);
+                    const y2 = Math.log(rightPoint.rate);
+                    const x = Math.log(day);
+                    
+                    // 对数空间中的线性插值
+                    const logRate = y1 + (y2 - y1) * (x - x1) / (x2 - x1);
+                    return Math.exp(logRate);
+                }
+
+                // 如果超出范围，使用指数衰减
+                if (day < 1) return nextRetention;
+                if (day > 60) {
+                    const a = sixtyDayRetention;
+                    const b = -Math.log(sixtyDayRetention / thirtyDayRetention) / 30;
+                    return a * Math.exp(-b * (day - 60));
+                }
+
+                return 0; // 以防万一的默认值
+            }
+
+            // 验证拟合效果
+            const retentionCurve = Array.from({length: 60}, (_, i) => ({
+                day: i + 1,
+                rate: getRetentionRate(i + 1)
+            }));
+
+            // 计算60天的DAU变化
+            const days = 60;
+            const dauData = new Array(days).fill(0);
+
+            // 计算每天的DAU
+            for (let currentDay = 0; currentDay < days; currentDay++) {
+                let todayDAU = 0;
+
+                // 1. 计算初始DAU的留存
+                if (currentDay === 0) {
+                    todayDAU = startDAU; // 第一天就是初始DAU
+                } else {
+                    todayDAU = startDAU * getRetentionRate(currentDay); // 初始DAU的留存
+                }
+
+                // 2. 计算每日新增用户的留存累计
+                if (currentDay > 0) { // 从第二天开始计算新增用户
+                    // 先加上当天的新增用户
+                    todayDAU += dailyNewUsers;
+                    
+                    // 然后计算之前每天新增用户的留存
+                    for (let previousDay = 1; previousDay < currentDay; previousDay++) {
+                        const daysGap = currentDay - previousDay;
+                        const retentionRate = getRetentionRate(daysGap);
+                        todayDAU += dailyNewUsers * retentionRate;
+                    }
+                }
+
+                dauData[currentDay] = Math.round(todayDAU);
+            }
+
+            // 创建DAU图表
+            const dauCtx = document.getElementById('dauChart').getContext('2d');
+            if (window.dauChart instanceof Chart) {
+                window.dauChart.destroy();
+            }
+
+            window.dauChart = new Chart(dauCtx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: days}, (_, i) => `第${i + 1}天`),
+                    datasets: [{
+                        label: 'DAU',
+                        data: dauData,
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '日活跃用户数(DAU)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: '天数'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    }
+                }
+            });
+
+            // 创建留存率图表
+            const retentionCtx = document.getElementById('retentionChart').getContext('2d');
+            if (window.retentionChart instanceof Chart) {
+                window.retentionChart.destroy();
+            }
+
+            window.retentionChart = new Chart(retentionCtx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: days}, (_, i) => `第${i + 1}天`),
+                    datasets: [{
+                        label: '留存率',
+                        data: retentionCurve.map(point => point.rate * 100), // 转换为百分比
+                        borderColor: 'rgb(255, 99, 132)',
+                        tension: 0.1,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '留存率(%)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: '天数'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `留存率: ${context.raw.toFixed(2)}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 显示成本分析
+            const totalUsers = dauData.reduce((sum, dau) => sum + dau, 0);
+            const totalNewUsers = dailyNewUsers * days;
+            const totalCost = totalNewUsers * cpi;
+            const costAnalysisHtml = `
+                <h3>成本分析</h3>
+                <p>60天总用户数：${Math.round(totalUsers).toLocaleString()} 人次</p>
+                <p>总新增用户：${Math.round(totalNewUsers).toLocaleString()} 人</p>
+                <p>总成本：$${totalCost.toLocaleString()}</p>
+                <p>平均单日活跃用户获取成本：$${(totalCost / totalUsers).toFixed(2)}</p>
+                <p>日均DAU：${Math.round(totalUsers / days).toLocaleString()} 人</p>
+            `;
+            document.getElementById('costAnalysis').innerHTML = costAnalysisHtml;
+        });
+    </script>
+</body>
+</html>
