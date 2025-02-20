@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>纸牌游戏</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+            text-align: center;
+        }
+        .card-area {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #handCards {
+            flex-direction: row;
+            flex-wrap: wrap;
+        }
+        .number-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-right: 10px;
+        }
+        .combination {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f8f8f8;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+        }
+        .score {
+            margin-left: auto;
+            font-weight: bold;
+        }
+        .card {
+            width: 60px;
+            height: 90px;
+            border: 2px solid #333;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .red { color: #ff0000; border-color: #ff0000; }
+        .yellow { color: #ffd700; border-color: #ffd700; }
+        .blue { color: #0000ff; border-color: #0000ff; }
+        .black { color: #000000; border-color: #000000; }
+        .combination {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f8f8f8;
+            border-radius: 4px;
+        }
+        .button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            font-size: 16px;
+            color: white;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>纸牌游戏</h1>
+        <button class="button" onclick="startGame()">开始游戏</button>
+        
+        <h2>手牌区域</h2>
+        <div id="handCards" class="card-area"></div>
+        
+        <h2>最优组合</h2>
+        <div id="combinations" class="card-area"></div>
+    </div>
+    <script src="cardGame.js"></script>
+</body>
+</html>
