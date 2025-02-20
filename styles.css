@@ -1,0 +1,130 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #333;
+}
+
+.game-area {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.section {
+    background-color: #f8f8f8;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+h2 {
+    margin-bottom: 15px;
+    color: #444;
+}
+
+.cards-container,
+.combinations-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.card {
+    width: 80px;
+    height: 120px;
+    background-color: white;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+    cursor: pointer;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card.red { color: #e74c3c; }
+.card.yellow { color: #f1c40f; }
+.card.blue { color: #3498db; }
+.card.black { color: #2c3e50; }
+
+.combination {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background-color: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 15px;
+}
+
+.combo-label {
+    font-size: 14px;
+    color: #666;
+    font-weight: bold;
+}
+
+.combo-cards {
+    display: flex;
+    gap: 5px;
+}
+
+.combination.straight {
+    border-left: 4px solid #2ecc71;
+}
+
+.combination.set {
+    border-left: 4px solid #3498db;
+}
+
+.combination.remaining {
+    border-left: 4px solid #95a5a6;
+}
+
+.deal-button {
+    display: block;
+    margin: 30px auto 0;
+    padding: 12px 24px;
+    font-size: 18px;
+    background-color: #2ecc71;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.deal-button:hover {
+    background-color: #27ae60;
+}
+
+.deal-button:active {
+    transform: scale(0.98);
+}
